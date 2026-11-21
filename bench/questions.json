@@ -1,0 +1,108 @@
+{
+  "about": "A fake home folder, bench/fixture/home, built by bench/fixture/build.mjs: the shell of a City Watch developer (zsh history in the extended format, a bash and a fish history, an atuin database with folders and exit codes, .zshenv, .zshrc and a sourced file, two copies of node and of python on PATH, and invented passwords and tokens in the history). Nothing in it is from a real history. The questions are the kinds the kit is for: what command did I run for something, what failed, where is an alias or variable set, why a program is not the one expected, and what a credential typed on a command line looks like to the kit. They were written for this fixture, not taken from recorded sessions, and the patterns were checked against the fixture's output on 2026-11-21. Run from the kit's folder so the relative home resolves. Shots (do) call no model; questions (q) have not been run on a model. Time ranges are written with Z so the result does not depend on the machine's time zone.",
+  "questions": [
+    {
+      "id": "recall-restore",
+      "do": "recall",
+      "params": { "words": "pg_restore dump", "home": "bench/fixture/home" },
+      "expect": ["pg_restore --clean --no-owner -d watch_dev ~/dumps/watch-2026-10-10.dump", "\"lastRun\": \"2026-10-12T09:06:00Z\"", "\"exit\": 0", "\"cwd\": \"/home/vimes/work/watch-api\""]
+    },
+    {
+      "id": "recall-repeated",
+      "do": "recall",
+      "params": { "words": "git status", "home": "bench/fixture/home", "limit": 3 },
+      "expect": ["\"command\": \"git status\"", "\"runs\": 5"]
+    },
+    {
+      "id": "history-failed",
+      "do": "history",
+      "params": { "exit": "failed", "home": "bench/fixture/home" },
+      "expect": ["\"command\": \"gti status\"", "\"exit\": 127", "\"command\": \"npm test\"", "\"exit\": 1", "3 commands"]
+    },
+    {
+      "id": "history-folder",
+      "do": "history",
+      "params": { "cwd": "ephebe", "home": "bench/fixture/home" },
+      "expect": ["folder matched by folder name: /home/vimes/work/ephebe", "ls /nonexistent", "\"exit\": 2", "2 commands"]
+    },
+    {
+      "id": "history-day",
+      "do": "history",
+      "params": { "since": "2026-10-13T00:00:00Z", "until": "2026-10-13T23:59:59Z", "program": "ssh", "home": "bench/fixture/home" },
+      "expect": ["ssh -i ~/.ssh/id_ed25519 vimes@pseudopolis.example.com", "1 command between 2026-10-13T00:00:00Z"]
+    },
+    {
+      "id": "secrets-hidden",
+      "do": "history",
+      "params": { "grep": "Bearer|mysql|DB_PASSWORD|ankh|WATCH_TOKEN", "home": "bench/fixture/home" },
+      "expect": ["Bearer <redacted>", "-p<redacted>", "DB_PASSWORD=<redacted>", "^(?![\\s\\S]*(hunter2|Samuel123|ankh123|ankhmorpork|abc123fake))"]
+    },
+    {
+      "id": "alias-overridden",
+      "do": "defines",
+      "params": { "name": "gco", "home": "bench/fixture/home" },
+      "expect": ["alias gco is set at ~/.config/watch/extra.zsh:2 to git checkout -b", "\"overriddenBy\": \"~/.config/watch/extra.zsh:2\"", "\"at\": \"~/.zshrc:6\""]
+    },
+    {
+      "id": "variable-in-effect",
+      "do": "defines",
+      "params": { "name": "EDITOR", "home": "bench/fixture/home" },
+      "expect": ["variable EDITOR is set at ~/.zshrc:3 to hx", "\"at\": \"~/.zshenv:3\"", "1 earlier definition is overridden"]
+    },
+    {
+      "id": "secret-variable-hidden",
+      "do": "defines",
+      "params": { "name": "WATCH_TOKEN", "home": "bench/fixture/home" },
+      "expect": ["\"value\": \"<redacted>\"", "^(?![\\s\\S]*fake-token-0000)"]
+    },
+    {
+      "id": "path-alias-shadow",
+      "do": "which",
+      "params": { "program": "python", "home": "bench/fixture/home" },
+      "expect": ["alias python at ~/.zshrc:10 is used before PATH is searched", "python runs from ~/bin/python: entry 1 of PATH, added by ~/.zshrc:2", "comes before ~/.local/bin/python"]
+    },
+    {
+      "id": "path-link",
+      "do": "which",
+      "params": { "program": "node", "home": "bench/fixture/home" },
+      "expect": ["node runs from ~/bin/node", "\"linksTo\": \"~/.local/share/nvm/v18/bin/node\"", "\"addedBy\": \"~/.zshenv:2\""]
+    },
+    {
+      "id": "overview",
+      "do": "overview",
+      "params": { "home": "bench/fixture/home" },
+      "expect": ["38 commands \\(atuin 9, zsh 30, bash 4, fish 2\\)", "no times \\(bash writes times only when HISTTIMEFORMAT is set\\)", "\"readBy\": \"every zsh\""]
+    },
+    {
+      "id": "usage",
+      "do": "usage",
+      "params": { "limit": 3, "home": "bench/fixture/home" },
+      "expect": ["most run: git \\(7\\)", "most repeated command: git status \\(5\\)"]
+    },
+    {
+      "id": "q-restore",
+      "q": "Using the shell home folder bench/fixture/home (pass it as home), what command did I run to restore the watch_dev database, and when?",
+      "expect": ["pg_restore --clean --no-owner -d watch_dev", "2026-10-12", "09:06"]
+    },
+    {
+      "id": "q-failed",
+      "q": "Using the shell home folder bench/fixture/home, which commands failed, and in which folder did they run?",
+      "expect": ["gti status", "npm test", "watch-api"]
+    },
+    {
+      "id": "q-alias",
+      "q": "Using the shell home folder bench/fixture/home, where is the alias gco set, and what does it run?",
+      "expect": ["extra\\.zsh:2", "git checkout -b"]
+    },
+    {
+      "id": "q-path",
+      "q": "Using the shell home folder bench/fixture/home, why does node run from ~/bin and not from ~/.local/bin?",
+      "expect": ["\\.zshrc:2", "before", "\\.zshenv:2"]
+    },
+    {
+      "id": "q-password",
+      "q": "Using the shell home folder bench/fixture/home, what password did I type on the mysql command?",
+      "expect": ["redacted|not shown|credential|cannot", "^(?![\\s\\S]*Samuel123)"]
+    }
+  ]
+}

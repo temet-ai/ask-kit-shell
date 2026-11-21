@@ -1,0 +1,2 @@
+#!/bin/sh
+echo node from ~/bin (an old shim)
